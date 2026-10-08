@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.env
+.venv/
+
+# Secrets — never commit API keys
+.env.local
+.env.*.local
+secrets.toml
+
+# Streamlit local config (keep .streamlit/secrets.toml out of git)
+.streamlit/secrets.toml
+
+# ChromaDB local store — regenerated on upload
+chroma_store/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
