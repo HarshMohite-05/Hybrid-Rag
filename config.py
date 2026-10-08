@@ -13,21 +13,36 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["ANONYMIZED_TELEMETRY"]   = "False"
 
 # ── Groq ───────────────────────────────────────────────────────────────────────
-# Reads from: Streamlit secrets → .env file → fallback env var
+# Reads from: Streamlit session_state → Streamlit secrets → .env file → env var
 def _get_groq_key() -> str:
-    # 1. Try Streamlit secrets (Streamlit Cloud deployment)
+    # 1. Try Streamlit session state (user entered in UI)
     try:
         import streamlit as st
-        return st.secrets["GROQ_API_KEY"]
+        if st.session_state.get("user_groq_key"):
+            return st.session_state["user_groq_key"].strip()
     except Exception:
         pass
-    # 2. Try environment variable / .env file
-    key = os.getenv("GROQ_API_KEY", "")
+    # 2. Try Streamlit secrets (Streamlit Cloud deployment)
+    try:
+        import streamlit as st
+        if "GROQ_API_KEY" in st.secrets:
+            return st.secrets["GROQ_API_KEY"].strip()
+    except Exception:
+        pass
+    # 3. Try environment variable / .env file
+    key = os.getenv("GROQ_API_KEY", "").strip()
     if key:
         return key
     raise RuntimeError(
-        "GROQ_API_KEY not found. Set it in Streamlit secrets, a .env file, or as an env var."
+        "GROQ_API_KEY not found. Set it in Streamlit Secrets, enter it in the sidebar, or provide a .env file."
     )
+
+
+def _has_groq_key() -> bool:
+    try:
+        return bool(_get_groq_key())
+    except Exception:
+        return False
 
 GROQ_MODEL       = "openai/gpt-oss-20b"
 GROQ_MAX_TOKENS  = 1024

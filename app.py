@@ -18,6 +18,7 @@ from pipeline import run_ingestion, run_query_stream, get_sources, db_count, res
 from config import (
     GROQ_MODEL, CHUNK_SIZE, CHUNK_OVERLAP,
     TOP_K_RETRIEVAL, TOP_K_RERANK, EMBED_MODEL,
+    _has_groq_key,
 )
 
 # ── Page config (must be first Streamlit call) ────────────────────────────────
@@ -265,6 +266,31 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # ── API Key ───────────────────────────────────────────────────────────────
+    has_key = _has_groq_key()
+    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-label">Groq API Key</div>', unsafe_allow_html=True)
+    if not has_key:
+        st.caption("⚠️ Key required to generate answers:")
+        st.text_input(
+            "Groq API Key",
+            type="password",
+            placeholder="gsk_...",
+            key="user_groq_key",
+            label_visibility="collapsed",
+        )
+    else:
+        with st.expander("🔑 Key Configured", expanded=False):
+            st.caption("Active key loaded. Override below if needed:")
+            st.text_input(
+                "Change Key",
+                type="password",
+                placeholder="gsk_...",
+                key="user_groq_key",
+                label_visibility="collapsed",
+            )
+    st.markdown('</div>', unsafe_allow_html=True)
+
     # ── Upload ────────────────────────────────────────────────────────────────
     st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
     st.markdown('<div class="sidebar-label">Upload Documents</div>', unsafe_allow_html=True)
@@ -429,6 +455,9 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
+if chunk_count > 0 and not _has_groq_key():
+    st.warning("⚠️ Groq API key is not set. Enter your key in the sidebar to start asking questions.")
+
 # ── Chat input ────────────────────────────────────────────────────────────────
 query = st.chat_input(
     "Ask anything about your documents…",
@@ -436,6 +465,15 @@ query = st.chat_input(
 )
 
 if query:
+    if not _has_groq_key():
+        st.session_state.messages.append({"role": "user", "content": query})
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "⚠️ **GROQ_API_KEY is required.** Please enter your Groq API key in the sidebar or add it to Streamlit Secrets (`GROQ_API_KEY = \"...\"`) to generate responses.",
+            "sources": []
+        })
+        st.rerun()
+
     st.session_state.messages.append({"role": "user", "content": query})
 
     placeholder = st.empty()
@@ -461,7 +499,6 @@ if query:
             """, unsafe_allow_html=True)
     except Exception as e:
         full_answer = f"⚠ Error generating response: {e}"
-        st.error(traceback.format_exc())
 
     # Final render without cursor
     placeholder.markdown(f"""

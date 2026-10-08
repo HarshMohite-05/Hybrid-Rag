@@ -3,12 +3,15 @@ from config import GROQ_MODEL, GROQ_MAX_TOKENS, GROQ_TEMPERATURE, _get_groq_key
 from generation.prompt import build_prompt, build_prompt_with_history
 
 _client = None
+_cached_key = None
 
 
 def _get_client() -> Groq:
-    global _client
-    if _client is None:
-        _client = Groq(api_key=_get_groq_key())
+    global _client, _cached_key
+    key = _get_groq_key()
+    if _client is None or _cached_key != key:
+        _client = Groq(api_key=key)
+        _cached_key = key
     return _client
 
 
